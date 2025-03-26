@@ -9,6 +9,8 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var (
@@ -26,7 +28,21 @@ type WSGameMessage struct {
 	Skipped string `json:"skipped,omitempty"`
 }
 
+type User struct {
+	gorm.Model
+	ClerkUserId  string
+	NumberOfWins uint `gorm:"default:0;uniqueIndex"`
+}
+
 func main() {
+	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	// Migrate the schema
+	db.AutoMigrate(&User{})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			OriginPatterns: []string{"*"},
@@ -69,7 +85,7 @@ func main() {
 				log.Println("Error reading message:", err)
 				break
 			}
-			handleMessage(ctx, conn, msg)
+			handleMessage(ctx, conn, msg, db)
 		}
 	})
 
@@ -77,13 +93,17 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage) {
+func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage, db *gorm.DB) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	switch msg.Event {
 	case "playerJoin":
 		log.Printf("Player joined: %s", msg.Player)
+
+		// Add the new player to the database if they don't already exist.
+		db.Create(&User{ClerkUserId: msg.Player})
+
 		// Add the new player to the list if not already present.
 		if !contains(players, msg.Player) {
 			players = append(players, msg.Player)
@@ -124,6 +144,23 @@ func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage)
 		removePlayer(msg.Player)
 		// Optionally, broadcast the leave event.
 		broadcastLeave(msg.Player)
+	case "playerSkip":
+		log.Printf("Player skipped: %s", msg.Skipper)
+		// Broadcast the skip event to all other connected clients.
+		broadcast := struct {
+			Event   string `json:"event"`
+			Skipper string `json:"skipper"`
+			Skipped string `json:"skipped"`
+		}{
+			Event:   "playerSkip",
+			Skipper: msg.Skipper,
+			Skipped: msg.Skipped,
+		}
+		for _, c := range clients {
+			if err := wsjson.Write(ctx, c, broadcast); err != nil {
+				log.Println("Error broadcasting player skip:", err)
+			}
+		}
 	default:
 		log.Printf("Unknown event: %s", msg.Event)
 	}
