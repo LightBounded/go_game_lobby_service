@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -105,7 +106,7 @@ func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage,
 		db.Create(&User{ClerkUserId: msg.Player})
 
 		// Add the new player to the list if not already present.
-		if !contains(players, msg.Player) {
+		if !slices.Contains(players, msg.Player) {
 			players = append(players, msg.Player)
 		}
 		// Associate the connection with this player.
@@ -169,7 +170,7 @@ func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage,
 func removeClient(conn *websocket.Conn) {
 	for i, c := range clients {
 		if c == conn {
-			clients = append(clients[:i], clients[i+1:]...)
+			clients = slices.Delete(clients, i, i+1)
 			break
 		}
 	}
@@ -178,7 +179,7 @@ func removeClient(conn *websocket.Conn) {
 func removePlayer(player string) {
 	for i, p := range players {
 		if p == player {
-			players = append(players[:i], players[i+1:]...)
+			players = slices.Delete(players, i, i+1)
 			break
 		}
 	}
@@ -201,14 +202,4 @@ func broadcastLeave(player string) {
 			log.Println("Error broadcasting player leave:", err)
 		}
 	}
-}
-
-// Utility function to check if a slice contains a string.
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
