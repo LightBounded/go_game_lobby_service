@@ -1,3 +1,7 @@
+// TODO: Update queue to be based on Stats struct or something like that
+// so we can update that info
+// TODO: Implement functions for income and skip cost calculation
+// TODO: Write logic to update income and send to client
 package main
 
 import (
@@ -33,6 +37,18 @@ type User struct {
 	gorm.Model
 	ClerkUserId  string
 	NumberOfWins uint `gorm:"default:0;uniqueIndex"`
+}
+
+type Stats struct {
+	Income   uint
+	SkipCost uint
+	Money    uint
+	Position uint
+}
+
+type Player struct {
+	Stats Stats
+	User  User
 }
 
 func main() {
@@ -146,6 +162,8 @@ func handleMessage(ctx context.Context, conn *websocket.Conn, msg WSGameMessage,
 		// Optionally, broadcast the leave event.
 		broadcastLeave(msg.Player)
 	case "playerSkip":
+		// TODO: make sure player has enough money to cover skip cost before declaring successful skip
+		// TODO: send over updated Stats stuct
 		log.Printf("Player skipped: %s", msg.Skipper)
 		// Broadcast the skip event to all other connected clients.
 		broadcast := struct {
