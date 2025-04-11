@@ -1,10 +1,3 @@
-// TODO: Update queue to be based on Stats struct or something like that
-// so we can update that info
-// TODO: Implement functions for income and skip cost calculation
-// TODO: Write logic to update income and send to client
-// TODO: Update clients with new info when someone is skipped
-// idea for income: 100 * (1 - (n/500))^5
-// idea for skip cost: 250+(10 * (1 + .012)^(256-n))
 package main
 
 import (
