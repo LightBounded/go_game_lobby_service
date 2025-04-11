@@ -28,3 +28,7 @@ docs for more detail on building and pushing.
 
 ### References
 * [Docker's Go guide](https://docs.docker.com/language/golang/)
+
+## AI Disclaimer
+
+We did occasionaly reference ChatGPT and Copilot for help as we were developing.
