@@ -2,6 +2,10 @@
 
 ## Deployment Instructions
 
+### Dependencies
+
+Make sure to have [Docker](https://www.docker.com/) installed on your machine
+
 ### Building and running with docker
 
 When you're ready, start your application by running:
